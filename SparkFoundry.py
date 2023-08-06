@@ -17,6 +17,30 @@ Typical Use Cases:
 - Dealing with skewed datasets where certain partitions or chunks are significantly larger than others.
 - Pre-processing steps before distributed storage or computing to ensure optimal performance.
 
+This block demonstrates the usage of the `RepartitionUtil` utility.
+
+The purpose is to repartition the given DataFrame `df` based on the `PARTITION_ID` column. 
+The goal is to achieve approximately 500,000 records per partition, ensuring a balanced 
+distribution of records, which is beneficial for subsequent processing and efficient storage.
+
+Furthermore, an example of writing the balanced DataFrame to an S3 location is provided, 
+ensuring that data is stored in a structured and efficient manner.
+
+dfBalanced = RepartitionUtil.repartitionWithinPartition(df, "PARTITION_ID", 500000)
+
+# Below is an example of writing the DataFrame to S3 (assuming necessary libraries are imported):
+s3Path = "s3a://[YOUR_BUCKET_NAME]/[YOUR_PATH]"
+
+# Write the balanced DataFrame to S3, partitioned by `PARTITION_ID`
+dfBalanced.write \
+          .partitionBy("PARTITION_ID") \
+          .format("com.databricks.spark.csv") \
+          .option("delimiter", "\t") \
+          .option("codec", "gzip") \
+          .option("nullValue", "\\N") \
+          .mode(SaveMode.Append) \
+          .save(s3Path)
+
 Reference:
 - https://stackoverflow.com/questions/53037124/partitioning-a-large-skewed-dataset-in-s3-with-sparks-partitionby-method
 

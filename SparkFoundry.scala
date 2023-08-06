@@ -34,7 +34,7 @@ import org.apache.spark.sql.expressions.Window
  * @version 1.0
  */
 object RepartitionUtil {
-  def repartitionWithinPartition(df: DataFrame, partitionCol: String, recordsPerPartition: Int)(implicit spark: SparkSession): DataFrame = {
+  def repartitionWithinPartition(df: DataFrame, partitionCol: String, recordsPerPartition: Int = 100000)(implicit spark: SparkSession): DataFrame = {
 
     // The record count per partition, plus the fields we need to compute the partitioning:
     val partitionCounts = df.groupBy(partitionCol)
@@ -46,13 +46,14 @@ object RepartitionUtil {
 
     val numPartitions = partitionCounts.agg(sum("num_files")).collect()(0).getLong(0).toInt
 
-    df.join(partitionCounts, Seq(partitionCol))
+    val dfWithPartitionIndex = df.join(partitionCounts, Seq(partitionCol))
       .withColumn("partition_index", (floor(rand() * col("num_files")) + col("file_offset")).cast("int"))
-      .rdd
-      .map(r => (r.getAs[Int]("partition_index"), r))
-      .partitionBy(new org.apache.spark.HashPartitioner(numPartitions))
-      .map(_._2)
-      .toDF()
-      .drop("count", "num_files", "file_offset", "partition_index")
+    val schema = dfWithPartitionIndex.schema
+    val RddWithPartitionIndex = dfWithPartitionIndex.rdd
+                          .map(r => (r.getAs[Int]("partition_index"), r))
+                          .partitionBy(new org.apache.spark.HashPartitioner(numPartitions))
+                          .map(_._2)
+    spark.createDataFrame(RddWithPartitionIndex, schema)
+                          .drop("count", "num_files", "file_offset", "partition_index")
   }
 }

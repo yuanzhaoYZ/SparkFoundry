@@ -26,7 +26,7 @@ Version: 1.0
 def repartition_within_partition(
     df: "pyspark.sql.dataframe.DataFrame",
     partition_col,
-    records_per_partition: int,
+    records_per_partition: int = 100000,
 ) -> "pyspark.sql.dataframe.DataFrame":
     """Repartition data such that files are the same size, even across partitions.
 

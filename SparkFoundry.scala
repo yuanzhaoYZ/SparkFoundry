@@ -70,7 +70,7 @@ object RepartitionUtil {
       .na.fill(0, Seq("file_offset"))
       .cache()
 
-    val numPartitions = partitionCounts.agg(sum("num_files")).collect()(0).getLong(0).toInt
+    val numPartitions = partitionCounts.agg(sum("num_files")).cast("int").collect()(0).getLong(0).toInt
 
     val dfWithPartitionIndex = df.join(partitionCounts, Seq(partitionCol))
       .withColumn("partition_index", (floor(rand() * col("num_files")) + col("file_offset")).cast("int"))

@@ -145,12 +145,12 @@ def repartition_within_partition(
         .cache()
     )
 
-    num_partitions = partition_counts.agg(F.sum("num_files")).collect()[0][0]
+    num_partitions = partition_counts.agg(F.sum("num_files")).cast("int").collect()[0][0]
 
     return (
         df.join(partition_counts, on=partition_col)
         .withColumn(
-            "partition_index", F.floor(F.rand() * F.col("num_files")) + F.col("file_offset")
+            "partition_index", (F.floor(F.rand() * F.col("num_files")) + F.col("file_offset")).cast("int")
         )
         # The DataFrame API doesn't let you explicitly set the partition key; only RDDs do.
         # So we convert to an RDD, repartition according to the partition index, then convert back.
